@@ -1,20 +1,20 @@
+import eventlet
+eventlet.monkey_patch()  # MUST come first!
+
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
-import eventlet
-
-eventlet.monkey_patch()  # Needed for SocketIO to work with eventlet
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")  # Allows any frontend
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # Renders the chat UI
+    return render_template('index.html')
 
 @socketio.on('message')
 def handle_message(msg):
     print('Received message:', msg)
-    emit('message', msg, broadcast=True)  # Broadcasts to all connected clients
+    emit('message', msg, broadcast=True)
 
 @socketio.on('connect')
 def on_connect():
@@ -25,4 +25,4 @@ def on_disconnect():
     print("Client disconnected")
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)  # Works for local and Render
+    socketio.run(app, host='0.0.0.0', port=5000)
