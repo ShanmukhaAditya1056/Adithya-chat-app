@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CipherTalk </title>
+  <title>CipherTalk</title>
   <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
@@ -56,6 +56,7 @@
       background-color: #dcf8c6;
       border-radius: 8px;
       max-width: 60%;
+      position: relative;
     }
     .bubble.me {
       background-color: #e1ffc7;
@@ -64,6 +65,16 @@
     }
     .bubble-content {
       font-size: 14px;
+    }
+    .timestamp {
+      font-size: 11px;
+      color: #777;
+      margin-top: 5px;
+      text-align: right;
+    }
+    .tick {
+      color: #34b7f1;
+      margin-left: 4px;
     }
     #input-area {
       display: flex;
@@ -108,13 +119,22 @@
     </div>
   </div>
 <script>
+  const socket = io();
   const picker = new EmojiButton();
   const emojiBtn = document.querySelector('#emojiBtn');
   const input = document.querySelector('#msg');
+  const chat = document.getElementById("chat");
+
   emojiBtn.addEventListener('click', () => picker.togglePicker(emojiBtn));
   picker.on('emoji', emoji => input.value += emoji);
 
   let selectedContact = "Messenger";
+
+  socket.on('message', (msg) => {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const html = `<div class='bubble'><div class='bubble-content'>${msg}</div><div class='timestamp'>${time}</div></div>`;
+    chat.innerHTML += html;
+  });
 
   function login() {
     const user = document.getElementById('username').value;
@@ -160,23 +180,23 @@
     encryptFileWithAES(file).then(async ({ aesKey, encryptedFile, iv }) => {
       const exportedKey = await exportAESKey(aesKey);
       const encryptedBase64 = btoa(String.fromCharCode(...new Uint8Array(encryptedFile)));
-      const fileHTML = `<div class='bubble me'><div class='bubble-content'>📎 <b>${file.name}</b><br><small>Encrypted</small></div></div>`;
-      document.getElementById("chat").innerHTML += fileHTML;
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const fileHTML = `<div class='bubble me'><div class='bubble-content'>📎 <b>${file.name}</b><br><small>Encrypted</small></div><div class='timestamp'>${time} <span class='tick'>&#10003;&#10003;</span></div></div>`;
+      chat.innerHTML += fileHTML;
       saveMessage(fileHTML);
-
-      // Simulated upload
-      console.log("Encrypted file (base64):", encryptedBase64);
-      console.log("Encrypted AES key:", exportedKey);
+      socket.emit('message', `[Encrypted File] ${file.name}`);
     });
   }
 
   function send() {
-    const msg = document.getElementById("msg").value.trim();
+    const msg = input.value.trim();
     if (!msg) return;
-    const html = `<div class='bubble me'><div class='bubble-content'>${msg}</div></div>`;
-    document.getElementById("chat").innerHTML += html;
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    socket.emit('message', msg);
+    const html = `<div class='bubble me'><div class='bubble-content'>${msg}</div><div class='timestamp'>${time} <span class='tick'>&#10003;&#10003;</span></div></div>`;
+    chat.innerHTML += html;
     saveMessage(html);
-    document.getElementById("msg").value = "";
+    input.value = "";
   }
 
   document.getElementById("fileInput").addEventListener("change", handleFileSend);
