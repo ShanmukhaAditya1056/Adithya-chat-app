@@ -120,6 +120,10 @@
   </div>
 <script>
   const socket = io();
+  socket.on('connect', () => {
+    console.log('✅ Connected to server');
+  });
+
   const picker = new EmojiButton();
   const emojiBtn = document.querySelector('#emojiBtn');
   const input = document.querySelector('#msg');
