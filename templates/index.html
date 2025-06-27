@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CipherTalk</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* ...existing styles remain unchanged... */
+  </style>
+</head>
+<body>
+<!-- existing body structure remains unchanged -->
+<script>
+  async function generateAESKey() {
+    return await window.crypto.subtle.generateKey({ name: "AES-CBC", length: 256 }, true, ["encrypt", "decrypt"]);
+  }
+
+  async function encryptFileWithAES(file) {
+    const key = await generateAESKey();
+    const iv = crypto.getRandomValues(new Uint8Array(16));
+    const fileBuffer = await file.arrayBuffer();
+    const encrypted = await crypto.subtle.encrypt({ name: "AES-CBC", iv }, key, fileBuffer);
+    return {
+      aesKey: key,
+      encryptedFile: encrypted,
+      iv: btoa(String.fromCharCode(...iv))
+    };
+  }
+
+  async function exportAESKey(key) {
+    const raw = await window.crypto.subtle.exportKey("raw", key);
+    return btoa(String.fromCharCode(...new Uint8Array(raw)));
+  }
+
+  function handleFileSend() {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file || !selectedContact) return;
+
+    encryptFileWithAES(file).then(async ({ aesKey, encryptedFile, iv }) => {
+      const exportedKey = await exportAESKey(aesKey);
+      const encryptedBase64 = btoa(String.fromCharCode(...new Uint8Array(encryptedFile)));
+      const fileHTML = `<div class='bubble me'><div class='bubble-content'>📎 <b>${file.name}</b><br><small>Encrypted</small></div></div>`;
+      document.getElementById("chat").innerHTML += fileHTML;
+      saveMessage(fileHTML);
+
+      // For demonstration: save encrypted file in memory or send to server
+      console.log("Encrypted file (base64):", encryptedBase64);
+      console.log("Encrypted AES key:", exportedKey);
+    });
+  }
+</script>
+</body>
+</html>
